@@ -50,3 +50,12 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# sbatch
+dog_run.sbatch
+
+# vscode
+.vscode/
+
+# Mac DS_Store
+.DS_Store
