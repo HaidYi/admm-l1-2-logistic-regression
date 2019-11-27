@@ -117,7 +117,7 @@ int main(int argc, char **argv)
     sprintf(dirA, "%s%d.dat", dirA, rank + 1);
     f = fopen(dirA, "r");
     if (f == NULL) {
-        printf("ERROR: %s%d.dat does not exist, exiting.\n", dirA, rank + 1);
+        printf("ERROR: %s does not exist, exiting.\n", dirA);
         exit(EXIT_FAILURE);
     }
     printf("process [%d] is reading %s\n", rank, dirA);
@@ -137,8 +137,8 @@ int main(int argc, char **argv)
 
     f = fopen(dirb, "r");
     if (f == NULL) {
-        printf("ERROR: %s%d.dat does not exist, exiting.\n", dirb, rank + 1);
-        return EXIT_FAILURE;
+        printf("ERROR: %s does not exist, exiting.\n", dirb);
+        exit(EXIT_FAILURE);
     }
     printf("process [%d] is reading %s\n", rank, dirb);
     mm_read_mtx_array_size(f, &m, &n);
