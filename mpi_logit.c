@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include <mpi.h>
 #include "header/mmio.h"
 #include "header/solver.h"
@@ -28,15 +29,79 @@ double objective(gsl_vector *x, void *param, gsl_vector *z, double lambda, char 
 
 int main(int argc, char **argv)
 {
+    int opt;
+    char type[3];
+    /* set default configs */
+    static int MAX_ITER  = 1000;
+	static double RELTOL = 1e-3;
+	static double ABSTOL = 1e-5;
+    int isPrint = 0;
+    char dirA[80], dirb[80], dir_soln[80];
+
     /* command line parser */
-    const int MAX_ITER  = 1000;
-	const double RELTOL = 1e-3;
-	const double ABSTOL = 1e-5;
-
-    char *type = "l2";
-
+    while ((opt = getopt(argc, argv, "A:b:e:E:r:t:o:p")) != -1) {
+        switch (opt)
+        {
+        case 'A':
+            if (strlen(optarg) > 80) {
+                fprintf(stderr, "file path -%s is too long\n", optarg);
+            }    
+            strcpy(dirA, optarg);
+            break;
+        case 'b':
+            if (strlen(optarg) > 80) {
+                fprintf(stderr, "file path %s is too long, please shorten the path name, or use relative path, existing...\n", optarg);
+            }
+            strcpy(dirb, optarg);
+            break;
+        case 'e':
+            if ((RELTOL = atof(optarg)) == 0) {
+                fprintf(stderr, "Option -%c's argument %s is invalid\n", optopt, optarg);
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'E':
+            if ((ABSTOL = atof(optarg)) == 0) {
+                fprintf(stderr, "Option -%c's argument %s is invalid\n", optopt, optarg);
+                return EXIT_FAILURE;
+            }
+            break;
+        case 't':
+            if ((MAX_ITER = atoi(optarg)) == 0) {
+                fprintf(stderr, "Option -%c's argument %s is invalid\n", optopt, optarg);
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'r':
+            if (strcmp(optarg, "l1") == 0 || strcmp(optarg, "l2") == 0)
+                strcpy(type, optarg);
+            else {
+                fprintf(stderr, "Option -%c only supports argument %s or %s\n", optopt, "l1", "l2");
+                return EXIT_FAILURE;
+            }     
+            break;
+        case 'p':
+            isPrint = 1;
+            break;
+        case 'o':
+            if (strlen(optarg) > 80)
+                fprintf(stderr, "file path -%s is too long\n", optarg);
+            strcpy(dir_soln, optarg);
+            break;
+        case '?':
+            if (optopt == 'A'|| optopt == 'b' || optopt == 'r' || optopt == 'e' || optopt == 't' || optopt == 'E')
+                fprintf(stderr, "Option -%c needs an argument\n", optopt);
+            else
+                fprintf(stderr, "Unknown option %c. \n", optopt);
+            return EXIT_FAILURE;
+            break;
+        default:
+            abort();
+        }
+    }
+    
     int rank;
-    int size;
+    int size=4;
 
     MPI_Init(&argc, &argv);               // Initialize the MPI execution environment
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); // Determine current running process
@@ -44,21 +109,18 @@ int main(int argc, char **argv)
 	double N = (double) size;             // Number of subsystems/slaves for ADMM
 
     /* Read the data in very subsystem slaver */
-    
     FILE *f;
     int m, n;
 	int row, col;
 	double entry;
 
-    char s[20];
-    sprintf(s, "data/A%d.dat", rank + 1);
-	printf("process [%d] is reading %s\n", rank, s);
-
-    f = fopen(s, "r");
+    sprintf(dirA, "%s%d.dat", dirA, rank + 1);
+    f = fopen(dirA, "r");
 	if (f == NULL) {
-		printf("ERROR: %s does not exist, exiting.\n", s);
+		printf("ERROR: %s%d.dat does not exist, exiting.\n", dirA, rank + 1);
 		exit(EXIT_FAILURE);
 	}
+    printf("process [%d] is reading %s\n", rank, dirA);
     mm_read_mtx_array_size(f, &m, &n);
 
     gsl_matrix *A = gsl_matrix_calloc(m, n);
@@ -71,15 +133,14 @@ int main(int argc, char **argv)
 	fclose(f);
 
     /* Reading response vector b */
-    sprintf(s, "data/b%d.dat", rank + 1);
-	printf("process [%d] is reading %s\n", rank, s);
+    sprintf(dirb, "%s%d.dat", dirb, rank + 1);
 
-    f = fopen(s, "r");
+    f = fopen(dirb, "r");
 	if (f == NULL) {
-		printf("ERROR: %s does not exist, exiting.\n", s);
-		exit(EXIT_FAILURE);
+		printf("ERROR: %s%d.dat does not exist, exiting.\n", dirb, rank + 1);
+		return EXIT_FAILURE;
 	}
-
+    printf("process [%d] is reading %s\n", rank, dirb);
 	mm_read_mtx_array_size(f, &m, &n);
 	gsl_vector *b = gsl_vector_calloc(m);
 	for (int i = 0; i < m; i++) {
@@ -97,10 +158,10 @@ int main(int argc, char **argv)
     
 	gsl_vector *x      = gsl_vector_calloc(n+1);  // primal variable
     gsl_vector *z      = gsl_vector_calloc(n+1);  // primal variable (splited from x)
-	gsl_vector *u      = gsl_vector_calloc(n+1);  // scaled dual variable i.e. u = (1/rho)y  
-	gsl_vector *r      = gsl_vector_calloc(n+1);  // residual variable i.e. r = x - z
-	gsl_vector *zprev  = gsl_vector_calloc(n+1);  // used fro save last iter z
-	gsl_vector *zdiff  = gsl_vector_calloc(n+1);  // difference between consecutive z, i.e. zdiff = z^{(i+1)} - z^{(i)}
+    gsl_vector *u      = gsl_vector_calloc(n+1);  // scaled dual variable i.e. u = (1/rho)y  
+    gsl_vector *r      = gsl_vector_calloc(n+1);  // residual variable i.e. r = x - z
+    gsl_vector *zprev  = gsl_vector_calloc(n+1);  // used fro save previous iter z
+    gsl_vector *zdiff  = gsl_vector_calloc(n+1);  // difference between consecutive z, i.e. zdiff = z^{(i+1)} - z^{(i)}
     gsl_vector *w      = gsl_vector_calloc(n+1);  // used for aggregate x + z in different process
 
     double send[3]; // aggregate three scalars, i.e. [||r||^2, ||x||^2, ||u||^2]
@@ -113,17 +174,26 @@ int main(int argc, char **argv)
 	double eps_pri  = 0;
 	double eps_dual = 0;
 
-	/* Main ADMM solver loop */
+	// /* Main ADMM solver loop */
     int iter = 0;
-    printf("%3s %10s %10s %10s %10s %10s\n", "#", "r norm", "eps_pri", "s norm", "eps_dual", "objective");
+    if (isPrint)
+        printf("Config: #proc: %d\tReg: %s\tMax_Iter: %6d\tRELTOL: %.6f\tABSTOL: %.6f\n", rank+1, type, MAX_ITER, RELTOL, ABSTOL);
+        printf("%3s %10s %10s %10s %10s %10s\n", "#", "r norm", "eps_pri", "s norm", "eps_dual", "objective");
 
     /* init model parameters */
     struct Param param = {A, b, u, z, rho};
     gsl_vector_set_all(x, 0.);
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    double start = MPI_Wtime();
+    double time_x = 0;
     while(iter < MAX_ITER) {    
         /* x-update: via gsl multi-dimensional optimiation*/
+        
+        double x_start = MPI_Wtime();
         x = update_x(&param, x);  // warm start with previous x
+        double x_end = MPI_Wtime();
+        time_x += (x_end - x_start);
 
         /* prepare for the Message passing: compute the global
            sum of x and z, then update z. 
@@ -176,7 +246,7 @@ int main(int argc, char **argv)
         eps_dual = sqrt(n*N)*ABSTOL + RELTOL * rho * nustack;
 
         /* check the object values */
-        if (rank == 0) {
+        if (rank == 0 && isPrint) {
             printf("%3d %10.4f %10.4f %10.4f %10.4f %10.4f\n", iter, 
                 prires, eps_pri, dualres, eps_dual, objective(z, &param, z, lambda, type));
         }
@@ -188,15 +258,22 @@ int main(int argc, char **argv)
         iter++;
     }
 
-    /* write the solutions using the master process */
-    if (rank == 0) {
-        f = fopen("data/solution.dat", "w");
-        gsl_vector_fprintf(f, z, "%lf");
-        fclose(f);
-    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    double end = MPI_Wtime();
 
     MPI_Finalize();  /* Close the MPI execuation */
-    
+
+
+    /* write the solutions using the master process */
+    if (rank == 0) {
+        printf("Total execuation time is %.8f/iter, time_x: %.8f.\n", (end - start)/iter, time_x/iter);
+        f = fopen(dir_soln, "w");
+        printf("Writing solutions to %s\n", dir_soln);
+        gsl_vector_fprintf(f, z, "%lf");
+        fclose(f);
+        printf("Done\n");
+    }
+
 
 	/* Clear memory */
 	gsl_matrix_free(A);
