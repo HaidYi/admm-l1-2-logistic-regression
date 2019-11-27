@@ -33,8 +33,8 @@ int main(int argc, char **argv)
     char type[3];
     /* set default configs */
     static int MAX_ITER  = 1000;
-	static double RELTOL = 1e-3;
-	static double ABSTOL = 1e-5;
+    static double RELTOL = 1e-3;
+    static double ABSTOL = 1e-5;
     int isPrint = 0;
     char dirA[80], dirb[80], dir_soln[80];
 
@@ -102,61 +102,61 @@ int main(int argc, char **argv)
 
     FILE *f;
     int m, n;
-	int row, col;
-	double entry;
+    int row, col;
+    double entry;
 
     f = fopen(dirA, "r");
-	if (f == NULL) {
-		fprintf(stderr, "ERROR: input file %s does not exist, exiting...\n", dirA);
-		return EXIT_FAILURE;
-	}
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: input file %s does not exist, exiting...\n", dirA);
+        return EXIT_FAILURE;
+    }
     printf("reading %s\n", dirA);
     mm_read_mtx_array_size(f, &m, &n);
 
     gsl_matrix *A = gsl_matrix_calloc(m, n);
-	for (int i = 0; i < m*n; i++) {
-		row = i % m;
-		col = floor(i/m);
-		fscanf(f, "%lf", &entry);
-		gsl_matrix_set(A, row, col, entry);
-	}
-	fclose(f);
+    for (int i = 0; i < m*n; i++) {
+        row = i % m;
+        col = floor(i/m);
+        fscanf(f, "%lf", &entry);
+        gsl_matrix_set(A, row, col, entry);
+    }
+    fclose(f);
 
     f = fopen(dirb, "r");
-	if (f == NULL) {
-		fprintf(stderr, "ERROR: %s does not exist, exiting.\n", dirb);
-		return EXIT_FAILURE;
-	}
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: %s does not exist, exiting.\n", dirb);
+        return EXIT_FAILURE;
+    }
     printf("reading %s\n", dirb);
-	mm_read_mtx_array_size(f, &m, &n);
-	gsl_vector *b = gsl_vector_calloc(m);
-	for (int i = 0; i < m; i++) {
-		fscanf(f, "%lf", &entry);
-		gsl_vector_set(b, i, entry);
-	}
-	fclose(f);
+    mm_read_mtx_array_size(f, &m, &n);
+    gsl_vector *b = gsl_vector_calloc(m);
+    for (int i = 0; i < m; i++) {
+        fscanf(f, "%lf", &entry);
+        gsl_vector_set(b, i, entry);
+    }
+    fclose(f);
 
     m = A->size1;
-	n = A->size2;
+    n = A->size2;
 
     double rho = 1.0;
     double lambda = 1.0;
     
-	gsl_vector *x      = gsl_vector_calloc(n+1);
-	gsl_vector *u      = gsl_vector_calloc(n+1);
-	gsl_vector *z      = gsl_vector_calloc(n+1);
-	gsl_vector *r      = gsl_vector_calloc(n+1);
-	gsl_vector *zprev  = gsl_vector_calloc(n+1);
-	gsl_vector *zdiff  = gsl_vector_calloc(n+1);
+    gsl_vector *x      = gsl_vector_calloc(n+1);
+    gsl_vector *u      = gsl_vector_calloc(n+1);
+    gsl_vector *z      = gsl_vector_calloc(n+1);
+    gsl_vector *r      = gsl_vector_calloc(n+1);
+    gsl_vector *zprev  = gsl_vector_calloc(n+1);
+    gsl_vector *zdiff  = gsl_vector_calloc(n+1);
 
     // double nxstack  = 0;
-	// double nystack  = 0;
-	double prires   = 0;
-	double dualres  = 0;
-	double eps_pri  = 0;
-	double eps_dual = 0;
+    // double nystack  = 0;
+    double prires   = 0;
+    double dualres  = 0;
+    double eps_pri  = 0;
+    double eps_dual = 0;
 
-	/* Main ADMM solver loop */
+    /* Main ADMM solver loop */
     int iter = 0;
     if (isPrint) {
         printf("Config: Reg: %s\tMax_Iter: %6d\tRELTOL: %.6f\tABSTOL: %.6f\n", type, MAX_ITER, RELTOL, ABSTOL);
@@ -228,19 +228,19 @@ int main(int argc, char **argv)
     printf("The total execuation time is %.8f/iter, time_x: %.8f.\n", (end - start)/iter, time_x/iter);
     f = fopen(dir_soln, "w");
     printf("Writing solutions to %s\n", dir_soln);
-	gsl_vector_fprintf(f, z, "%lf");
-	fclose(f);
+    gsl_vector_fprintf(f, z, "%lf");
+    fclose(f);
     printf("Done\n");
 
-	/* Clear memory */
-	gsl_matrix_free(A);
-	gsl_vector_free(b);
-	gsl_vector_free(x);
-	gsl_vector_free(u);
-	gsl_vector_free(z);
-	gsl_vector_free(r);
-	gsl_vector_free(zprev);
-	gsl_vector_free(zdiff);
+    /* Clear memory */
+    gsl_matrix_free(A);
+    gsl_vector_free(b);
+    gsl_vector_free(x);
+    gsl_vector_free(u);
+    gsl_vector_free(z);
+    gsl_vector_free(r);
+    gsl_vector_free(zprev);
+    gsl_vector_free(zdiff);
 
     return 0;
 }
@@ -256,13 +256,13 @@ int main(int argc, char **argv)
  * @param k: threshold paramter
 */
 void soft_threshold(gsl_vector *v, double k) {
-	double vi;
-	for (int i = 0; i < v->size; i++) {
-		vi = gsl_vector_get(v, i);
-		if (vi > k)       { gsl_vector_set(v, i, vi - k); }
-		else if (vi < -k) { gsl_vector_set(v, i, vi + k); }
-		else              { gsl_vector_set(v, i, 0); }
-	}
+    double vi;
+    for (int i = 0; i < v->size; i++) {
+        vi = gsl_vector_get(v, i);
+        if (vi > k)       { gsl_vector_set(v, i, vi - k); }
+        else if (vi < -k) { gsl_vector_set(v, i, vi + k); }
+        else              { gsl_vector_set(v, i, 0); }
+    }
 }
 
 /*
