@@ -1,5 +1,4 @@
 # admm-l1-2-logistic-regression
-----
 
 ## Description
 This repo is the final project of COMP633 at UNC-Chapel Hill. We used **A**lternating **D**irection **M**ethod of **M**ultipliers (ADMM) optimization methods to solve the L-1/L-2 regularized binary logistic regression. In this repo, we provide efficient squential and distributed implementations of ADMM powered by GNU Scientific Library (GSL) and Message Passing Interface (MPI) such that the program can handle millions of samples within couple of minutes. 
@@ -35,7 +34,7 @@ Note: Matrix and vector uses the standard Matrix Market File Format, i.e. [__Mat
 
 ### Distributed Runner
 ```bash
-mpirun -np {# of cores} ./mpi_logit [Arguments]
+mpirun -np {\# of cores} ./mpi_logit [Arguments]
 ```
 Note: For the distributed runner, we follow the data-parallel principle. Every process reads the part of feature matrix and response vector (partitioned by sample). Therefore, the argument `-A` and `b` should be the prefix path of data file, e.g.  we use `-A data/A` when `A1.dat--A{N}.dat` are located in `data`.
 
