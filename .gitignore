@@ -59,3 +59,6 @@ dog_run.sbatch
 
 # Mac DS_Store
 .DS_Store
+
+# data
+data
