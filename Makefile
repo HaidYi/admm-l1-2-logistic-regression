@@ -6,7 +6,8 @@ ARCH=x86_64
 
 MPICC=mpicc
 CC=gcc
-CFLAGS=-Wall -std=c99 -arch $(ARCH) -I$(GSLROOT)/include
+#CFLAGS=-Wall -std=c99 -arch $(ARCH) -I$(GSLROOT)/include
+FLAGS=-Wall -std=c99 -I$(GSLROOT)/include
 LDFLAGS=-L$(GSLROOT)/lib -lgsl -lgslcblas -lm
 
 all: mpi_logit logit
