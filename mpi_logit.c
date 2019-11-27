@@ -176,10 +176,10 @@ int main(int argc, char **argv)
 
 	// /* Main ADMM solver loop */
     int iter = 0;
-    if (isPrint)
+    if (isPrint) {
         printf("Config: #proc: %d\tReg: %s\tMax_Iter: %6d\tRELTOL: %.6f\tABSTOL: %.6f\n", rank+1, type, MAX_ITER, RELTOL, ABSTOL);
         printf("%3s %10s %10s %10s %10s %10s\n", "#", "r norm", "eps_pri", "s norm", "eps_dual", "objective");
-
+    }
     /* init model parameters */
     struct Param param = {A, b, u, z, rho};
     gsl_vector_set_all(x, 0.);
