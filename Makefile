@@ -7,7 +7,7 @@ ARCH=x86_64
 MPICC=mpicc
 CC=gcc
 #CFLAGS=-Wall -std=c99 -arch $(ARCH) -I$(GSLROOT)/include
-FLAGS=-Wall -std=c99 -I$(GSLROOT)/include
+CFLAGS=-Wall -std=c99 -I$(GSLROOT)/include
 LDFLAGS=-L$(GSLROOT)/lib -lgsl -lgslcblas -lm
 
 all: mpi_logit logit
@@ -16,7 +16,7 @@ mpi_logit: mpi_logit.o solver.o mmio.o
 	$(MPICC) $(CFLAGS) $(LDFLAGS) mmio.o solver.o mpi_logit.o -o mpi_logit
 
 logit: logit.o solver.o mmio.o
-	$(CC) $(CFLAGS) $(LDFLAGS) mmio.o solver.o logit.o -o logit
+	$(MPICC) $(CFLAGS) $(LDFLAGS) mmio.o solver.o logit.o -o logit
 
 mpi_logit.o: mpi_logit.c mmio.o solver.o
 	$(CC) $(CFLAGS) -c mpi_logit.c
