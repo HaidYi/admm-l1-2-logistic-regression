@@ -43,7 +43,7 @@ do
     -r ${reg} \
     -t 1000 \
     -o ${seq_dir}/solution_seq.dat \
-    -p 1 > result_seq_${SLURM_JOB_ID}.out 2>&1
+    -p 1 > result_seq_${nrow}_${ncol}_${SLURM_JOB_ID}.out 2>&1
     
     for ncore in ${ncore_list[@]}
     do
@@ -56,7 +56,7 @@ do
         -r ${reg} \
         -t 1000 \
         -o ${mpi_dir}/solution_mpi_${ncore}.dat \
-        -p 1 > result_mpi_${ncore}_${SLURM_JOB_ID}.out 2>&1
+        -p 1 > result_mpi_${nrow}_${ncol}_${ncore}_${SLURM_JOB_ID}.out 2>&1
     done
 
 done
